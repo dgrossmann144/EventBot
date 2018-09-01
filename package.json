@@ -1,0 +1,10 @@
+{
+    "name": "EventBot",
+    "version": "1.0.0",
+    "description": "Allows users to schedule events for the server",
+    "main": "eventBot.js",
+    "author": "Daniel Grossmann",
+    "dependencies": {
+        "discord.js": "^11.4.2"
+    }
+}
