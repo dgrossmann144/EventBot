@@ -2,6 +2,7 @@ var auth = require("./auth.json");
 var discord = require("discord.js");
 
 var client = new discord.Client();
+var events = [];
 
 client.on('message', msg => {
     if (msg.content.charAt(0) === ':' && msg.content.charAt(1) === ':') {
@@ -14,7 +15,7 @@ client.on('message', msg => {
                     msg.channel.send('That event does not have the correct number of  arguments, use help to view the arguments');
                     break;
                 }
-                var newEvent = new UserEvent(args[1], args[2], args[3], args[4], msg.member.nickname, msg.channel);
+                var newEvent = new UserEvent(args[1], args[2], args[3], args[4], msg.member, msg.channel);
 
                 break;
             case 'help':
@@ -27,19 +28,70 @@ client.on('message', msg => {
     }
 });
 
+client.on('messageReactionAdd', (messageReaction, user) => {
+    if(!(user.id === client.user.id)) {
+        var i;
+        for(i = 0; i < events.length; i++) {
+            console.log("event tostring: " + events[i].toString());
+            console.log(events[i].isMessageSent);
+            if(events[i].isMessageSent && messageReaction.message.id === events[i].eventMessage.id) {
+                if(messageReaction.emoji.id === '409344837997821952') {
+                    events[i].attendees.push(user);
+                    var test;
+                    for(test = 0; test < events[i].attendees.length; i++) {
+                        console.log(events[i].attendees[test]);
+                    }
+                } else if (messageReaction.me) {
+                    events[i].potentialAttendees.push(user);
+                    var test2;
+                    for(test = 0; test2 < events[i].potentialAttendees.length; i++) {
+                        console.log(events[i].potentialAttendees[test2]);
+                    }
+                }
+            }
+        }
+    }
+});
+
 client.login(auth.token);
 
-function UserEvent(eventName, eventDescription, eventDate, eventTime, createdBy, channel) {
+function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy, channel) {
     this.eventName = eventName;
     this.eventDescription = eventDescription;
     this.eventDate = eventDate;
     this.eventTime = eventTime;
     this.createdBy = createdBy;
     this.channel = channel;
-    var attendees = [];
-    var potentialAttendees = [];
+    this.isMessageSent = false;
+    this.attendees = [];
+    this.potentialAttendees = [];
+    this.eventMessage;
 
-    var eventMessage;
-    channel.send('test message').then(message => eventMessage = message);
+    channel.send(createdBy.user + ' has created an event: ' + eventName +
+                 '\n' + eventDescription +
+                 '\n' + 'It will take place on ' + eventDate + ' at ' + eventTime +
+                 '\n' + 'React with party_wurmple if you are attending and quesion mark if you might be attending.').then(message => {
+        eventMessage = message
+        isMessageSent = true;
+
+        eventMessage.react(eventMessage.guild.emojis.get('409344837997821952')); //id for party_wurmple
+        eventMessage.react('❓');
+
+        events.push(this);
+
+        // lists name and id of all custom emojis on a server
+        // function listEmojis(curEmoji) {
+        //     console.log(curEmoji.name + ' ' + curEmoji.id);
+        //     return true;
+        // }
+        // eventMessage.guild.emojis.every(listEmojis)
+
+    }, () => {
+        channel.send('There was an error setting up the event, try again.');
+    });
     //TODO write message and put it in a message var
+
+    function toString() {
+        return this.eventName;
+    }
 }
