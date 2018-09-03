@@ -71,12 +71,14 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
     channel.send(createdBy.user + ' has created an event: ' + eventName +
                  '\n' + eventDescription +
                  '\n' + 'It will take place on ' + eventDate + ' at ' + eventTime +
-                 '\n' + 'React with party_wurmple if you are attending and quesion mark if you might be attending.').then(message => {
+                 '\n' + 'React with ' + channel.guild.emojis.get('409344837997821952') + ' if you are attending, or ❓ if you might be attending.').then(message => {
         eventMessage = message
         isMessageSent = true;
 
-        eventMessage.react(eventMessage.guild.emojis.get('409344837997821952')); //id for party_wurmple
-        eventMessage.react('❓');
+        //id for party_wurmple: 409344837997821952
+        eventMessage.react(eventMessage.guild.emojis.get('409344837997821952')).then(() => {
+            eventMessage.react('❓');
+        });
 
         events.push(this);
 
@@ -93,6 +95,6 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
     //TODO write message and put it in a message var
 
     function toString() {
-        return this.eventName;
+        return this.eventName.toString();
     }
 }
