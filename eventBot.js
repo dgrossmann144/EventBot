@@ -5,11 +5,10 @@ var client = new discord.Client();
 var events = [];
 
 client.on('message', msg => {
-    if (!(msg.content.charAt(0) === ':' && msg.content.charAt(1) === ':')) {
+    if (!msg.content.startsWith('::')) {
         return;
     }
     var command = msg.content.slice(2).split(' ')[0];
-
     switch(command) {
         case 'createEvent':
             var args = msg.content.split(' ');
@@ -30,22 +29,19 @@ client.on('message', msg => {
 });
 
 client.on('messageReactionAdd', (messageReaction, user) => {
-    if(!(user.id === client.user.id)) {
-        var i;
-        for(i = 0; i < events.length; i++) {
+    if(user.id !== client.user.id) {
+        for(var i = 0; i < events.length; i++) {
             console.log("event tostring: " + events[i].toString());
             console.log(events[i].isMessageSent);
             if(events[i].isMessageSent && messageReaction.message.id === events[i].eventMessage.id) {
                 if(messageReaction.emoji.id === '409344837997821952') {
                     events[i].attendees.push(user);
-                    var test;
-                    for(test = 0; test < events[i].attendees.length; i++) {
+                    for(var test = 0; test < events[i].attendees.length; i++) {
                         console.log(events[i].attendees[test]);
                     }
                 } else if (messageReaction.me) {
                     events[i].potentialAttendees.push(user);
-                    var test2;
-                    for(test = 0; test2 < events[i].potentialAttendees.length; i++) {
+                    for(var test = 0; test2 < events[i].potentialAttendees.length; i++) {
                         console.log(events[i].potentialAttendees[test2]);
                     }
                 }
@@ -67,17 +63,18 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
     this.attendees = [];
     this.potentialAttendees = [];
     this.eventMessage;
+    var self = this;
 
     channel.send(createdBy.user + ' has created an event: ' + eventName +
                  '\n' + eventDescription +
                  '\n' + 'It will take place on ' + eventDate + ' at ' + eventTime +
                  '\n' + 'React with ' + channel.guild.emojis.get('409344837997821952') + ' if you are attending, or ❓ if you might be attending.').then(message => {
-        eventMessage = message
-        isMessageSent = true;
+        self.eventMessage = message
+        self.isMessageSent = true;
 
         //id for party_wurmple: 409344837997821952
-        eventMessage.react(eventMessage.guild.emojis.get('409344837997821952')).then(() => {
-            eventMessage.react('❓');
+        self.eventMessage.react(eventMessage.guild.emojis.get('409344837997821952')).then(() => {
+            self.eventMessage.react('❓');
         });
 
         events.push(this);
