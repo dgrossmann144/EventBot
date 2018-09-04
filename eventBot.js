@@ -32,16 +32,16 @@ client.on('message', msg => {
 
 client.on('messageReactionAdd', (messageReaction, user) => {
     if(user.id !== client.user.id) {
-        for(var i = 0; i < events.length; i++) {
-            if(events[i].isMessageUpdated && messageReaction.message.id === events[i].eventMessage.id) {
+        for(let event of events) {
+            if(event.isMessageUpdated && messageReaction.message.id === event.eventMessage.id) {
                 if(messageReaction.emoji.id === '409344837997821952') {
-                    events[i].addAttendee(user);
+                    event.addAttendee(user);
                     break;
                 } else if (messageReaction.emoji.toString() === '❓') {
-                    events[i].addPotentialAttendee(user);
+                    event.addPotentialAttendee(user);
                     break;
                 } else if (messageReaction.emoji.id === '292824502969303041') {
-                    events[i].addNotAttending(user);
+                    event.addNotAttending(user);
                     break;
                 }
             }
@@ -51,19 +51,16 @@ client.on('messageReactionAdd', (messageReaction, user) => {
 
 client.on('messageReactionRemove', (messageReaction, user) => {
     if(user.id !== client.user.id) {
-        for(var i = 0; i < events.length; i++) {
-            if(events[i].isMessageUpdated && messageReaction.message.id === events[i].eventMessage.id) {
+        for(let event of events) {
+            if(event.isMessageUpdated && messageReaction.message.id === event.eventMessage.id) {
                 if(messageReaction.emoji.id === '409344837997821952') {
-                    var removeIndex = events[i].attendees.indexOf(user);
-                    events[i].removeAttendee(removeIndex);
+                    event.removeAttendee(user);
                     break;
                 } else if (messageReaction.emoji.toString() === '❓') {
-                    var removeIndex = events[i].potentialAttendees.indexOf(user);
-                    events[i].removePotentialAttendee(removeIndex);
+                    event.removePotentialAttendee(user);
                     break;
                 } else if (messageReaction.emoji.id === '292824502969303041') {
-                    var removeIndex = events[i].notAttending.indexOf(user);
-                    events[i].removeNotAttending(removeIndex);
+                    event.removeNotAttending(user);
                     break;
                 }
             }
@@ -79,9 +76,9 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
     this.createdBy = createdBy;
     this.channel = channel;
     this.isMessageUpdated = false;
-    this.attendees = [];
-    this.potentialAttendees = [];
-    this.notAttending = [];
+    this.attendees = new Set();
+    this.potentialAttendees = new Set();
+    this.notAttending = new Set();
     this.eventMessage;
     var self = this;
 
@@ -110,37 +107,33 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
         channel.send('There was an error setting up the event, try again.');
     });
 
-    UserEvent.prototype.toString = function toString() {
-        return this.eventName + ' by ' + this.createdBy.nickname.toString();
-    }
-
     UserEvent.prototype.addAttendee = function(user) {
-        this.attendees.push(user);
+        this.attendees.add(user);
         this.updateAttendees();
     }
 
-    UserEvent.prototype.removeAttendee = function(index) {
-        this.attendees.splice(index, 1);
+    UserEvent.prototype.removeAttendee = function(user) {
+        this.attendees.delete(user);
         this.updateAttendees();
     }
 
     UserEvent.prototype.addPotentialAttendee = function(user) {
-        this.potentialAttendees.push(user);
+        this.potentialAttendees.add(user);
         this.updateAttendees();
     }
 
-    UserEvent.prototype.removePotentialAttendee = function(index) {
-        this.potentialAttendees.splice(index, 1);
+    UserEvent.prototype.removePotentialAttendee = function(user) {
+        this.potentialAttendees.delete(user);
         this.updateAttendees();
     }
 
     UserEvent.prototype.addNotAttending = function(user) {
-        this.notAttending.push(user);
+        this.notAttending.add(user);
         this.updateAttendees();
     }
 
-    UserEvent.prototype.removeNotAttending = function(index) {
-        this.notAttending.splice(index, 1);
+    UserEvent.prototype.removeNotAttending = function(user) {
+        this.notAttending.delete(user);
         this.updateAttendees();
     }
 
@@ -150,29 +143,33 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
                      '\n' + eventDescription +
                      '\n' + 'It will take place ' + eventDate + ' at ' + eventTime +
                      '\n' + 'React with ' + channel.guild.emojis.get('409344837997821952') + ' if you are attending, ❓ if you might be attending, or ' + channel.guild.emojis.get('292824502969303041') + ' if you are not attending.' +
-                     '\nAttending (' + this.attendees.length +'): ';
-        for (var i = 0; i < this.attendees.length - 1; i++) {
-            updatedText += this.attendees[i] + ', ';
+                     '\nAttending (' + this.attendees.size +'): ';
+        for(let attendee of this.attendees) {
+            updatedText += attendee + ', ';
         }
-        if (this.attendees.length > 0) {
-            updatedText += this.attendees[this.attendees.length - 1];
+        if(this.attendees.size > 0) {
+            updatedText = updatedText.substr(0, updatedText.length - 2);
         }
-        updatedText += '\nMaybe Attending (' + this.potentialAttendees.length +'): ';
-        for (var i = 0; i < this.potentialAttendees.length - 1; i++) {
-            updatedText += this.potentialAttendees[i] + ', ';
+        updatedText += '\nMaybe Attending (' + this.potentialAttendees.size +'): ';
+        for(let potentialAttendee of this.potentialAttendees) {
+            updatedText += potentialAttendee + ', ';
         }
-        if (this.potentialAttendees.length > 0) {
-            updatedText += this.potentialAttendees[this.potentialAttendees.length - 1];
+        if(this.potentialAttendees.size > 0) {
+            updatedText = updatedText.substr(0, updatedText.length - 2);
         }
-        updatedText += '\nNot Attending (' + this.notAttending.length +'): ';
-        for(var i = 0; i < this.notAttending.length - 1; i++) {
-            updatedText += this.notAttending[i] + ', ';
+        updatedText += '\nNot Attending (' + this.notAttending.size +'): ';
+        for(let notAttend of this.notAttending) {
+            updatedText += notAttend + ', ';
         }
-        if (this.notAttending.length > 0) {
-            updatedText += this.notAttending[this.notAttending.length - 1];
+        if(this.notAttending.size > 0) {
+            updatedText = updatedText.substr(0, updatedText.length - 2);
         }
         this.eventMessage.edit(updatedText).then(message => {
             this.isMessageUpdated = true;
         });
+    }
+
+    UserEvent.prototype.toString = function toString() {
+        return this.eventName + ' by ' + this.createdBy.nickname.toString();
     }
 }
