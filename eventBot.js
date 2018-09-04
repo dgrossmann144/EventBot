@@ -36,19 +36,12 @@ client.on('messageReactionAdd', (messageReaction, user) => {
             if(events[i].isMessageUpdated && messageReaction.message.id === events[i].eventMessage.id) {
                 if(messageReaction.emoji.id === '409344837997821952') {
                     events[i].addAttendee(user);
-                    //debug
-                    // for(var test = 0; test < events[i].attendees.length; test++) {
-                    //     console.log(events[i].attendees[test].username);
-                    // }
-
                     break;
-                } else if (messageReaction.me) {
+                } else if (messageReaction.emoji.toString() === '❓') {
                     events[i].addPotentialAttendee(user);
-                    //debug
-                    // for(var test2 = 0; test2 < events[i].potentialAttendees.length; test2++) {
-                    //     console.log(events[i].potentialAttendees[test2].username);
-                    // }
-
+                    break;
+                } else if (messageReaction.emoji.id === '292824502969303041') {
+                    events[i].addNotAttending(user);
                     break;
                 }
             }
@@ -63,20 +56,14 @@ client.on('messageReactionRemove', (messageReaction, user) => {
                 if(messageReaction.emoji.id === '409344837997821952') {
                     var removeIndex = events[i].attendees.indexOf(user);
                     events[i].removeAttendee(removeIndex);
-                    //debug
-                    // for(var test = 0; test < events[i].attendees.length; test++) {
-                    //     console.log(events[i].attendees[test].username);
-                    // }
-
                     break;
-                } else if (messageReaction.me) {
+                } else if (messageReaction.emoji.toString() === '❓') {
                     var removeIndex = events[i].potentialAttendees.indexOf(user);
                     events[i].removePotentialAttendee(removeIndex);
-                    //debug
-                    // for(var test2 = 0; test2 < events[i].potentialAttendees.length; test2++) {
-                    //     console.log(events[i].potentialAttendees[test2].username);
-                    // }
-
+                    break;
+                } else if (messageReaction.emoji.id === '292824502969303041') {
+                    var removeIndex = events[i].notAttending.indexOf(user);
+                    events[i].removeNotAttending(removeIndex);
                     break;
                 }
             }
@@ -94,19 +81,22 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
     this.isMessageUpdated = false;
     this.attendees = [];
     this.potentialAttendees = [];
+    this.notAttending = [];
     this.eventMessage;
     var self = this;
 
     channel.send(createdBy.user + ' has created an event: ' + eventName +
                  '\n' + eventDescription +
                  '\n' + 'It will take place ' + eventDate + ' at ' + eventTime +
-                 '\n' + 'React with ' + channel.guild.emojis.get('409344837997821952') + ' if you are attending, or ❓ if you might be attending.').then(message => {
+                 '\n' + 'React with ' + channel.guild.emojis.get('409344837997821952') + ' if you are attending, ❓ if you might be attending, or ' + channel.guild.emojis.get('292824502969303041') + ' if you are not attending.').then(message => {
         self.eventMessage = message
         self.isMessageUpdated = true;
 
         //id for party_wurmple: 409344837997821952
         self.eventMessage.react(self.eventMessage.guild.emojis.get('409344837997821952')).then(() => {
-            self.eventMessage.react('❓');
+            self.eventMessage.react('❓').then(() => {
+                self.eventMessage.react(self.eventMessage.guild.emojis.get('292824502969303041'));
+            });
         });
 
         events.push(this);
@@ -115,7 +105,7 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
         //     console.log(curEmoji.name + ' ' + curEmoji.id);
         //     return true;
         // }
-        // eventMessage.guild.emojis.every(listEmojis)
+        // this.eventMessage.guild.emojis.every(listEmojis);
     }, () => {
         channel.send('There was an error setting up the event, try again.');
     });
@@ -127,25 +117,31 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
     UserEvent.prototype.addAttendee = function(user) {
         this.attendees.push(user);
         this.updateAttendees();
-        //TODO edit message to update attendee list
     }
 
     UserEvent.prototype.removeAttendee = function(index) {
         this.attendees.splice(index, 1);
         this.updateAttendees();
-        //TODO edit message to update attendee list
     }
 
     UserEvent.prototype.addPotentialAttendee = function(user) {
         this.potentialAttendees.push(user);
         this.updateAttendees();
-        //TODO edit message to update maybe list
     }
 
     UserEvent.prototype.removePotentialAttendee = function(index) {
         this.potentialAttendees.splice(index, 1);
         this.updateAttendees();
-        //TODO edit message to update maybe list
+    }
+
+    UserEvent.prototype.addNotAttending = function(user) {
+        this.notAttending.push(user);
+        this.updateAttendees();
+    }
+
+    UserEvent.prototype.removeNotAttending = function(index) {
+        this.notAttending.splice(index, 1);
+        this.updateAttendees();
     }
 
     UserEvent.prototype.updateAttendees = function() {
@@ -153,21 +149,27 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
         var updatedText = this.createdBy.user + ' has created an event: ' + eventName +
                      '\n' + eventDescription +
                      '\n' + 'It will take place ' + eventDate + ' at ' + eventTime +
-                     '\n' + 'React with ' + channel.guild.emojis.get('409344837997821952') + ' if you are attending, or ❓ if you might be attending.' +
-                     '\nAttending: ';
+                     '\n' + 'React with ' + channel.guild.emojis.get('409344837997821952') + ' if you are attending, ❓ if you might be attending, or ' + channel.guild.emojis.get('292824502969303041') + ' if you are not attending.' +
+                     '\nAttending (' + this.attendees.length +'): ';
         for (var i = 0; i < this.attendees.length - 1; i++) {
             updatedText += this.attendees[i] + ', ';
         }
         if (this.attendees.length > 0) {
             updatedText += this.attendees[this.attendees.length - 1];
         }
-        //;;createEvent;Test Event;This event is for me to test if the bot functions correctly;all the damn time;whenever o'clock
-        updatedText += '\nMaybe Attending: ';
+        updatedText += '\nMaybe Attending (' + this.potentialAttendees.length +'): ';
         for (var i = 0; i < this.potentialAttendees.length - 1; i++) {
             updatedText += this.potentialAttendees[i] + ', ';
         }
         if (this.potentialAttendees.length > 0) {
             updatedText += this.potentialAttendees[this.potentialAttendees.length - 1];
+        }
+        updatedText += '\nNot Attending (' + this.notAttending.length +'): ';
+        for(var i = 0; i < this.notAttending.length - 1; i++) {
+            updatedText += this.notAttending[i] + ', ';
+        }
+        if (this.notAttending.length > 0) {
+            updatedText += this.notAttending[this.notAttending.length - 1];
         }
         this.eventMessage.edit(updatedText).then(message => {
             this.isMessageUpdated = true;
