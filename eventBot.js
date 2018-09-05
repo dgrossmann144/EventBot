@@ -56,6 +56,23 @@ client.on('message', msg => {
 
             break;
         case 'listEvents':
+            var args = msg.content.slice(2).split(';');
+            if(args.length != 1) {
+                msg.channel.send('That command does not have the correct number of arguments, use help to view the arguments');
+                break;
+            }
+
+            var listOfEvents = '';
+            for(let event of events) {
+                listOfEvents += event.eventName + ', ';
+            }
+            if(events.length > 0) {
+                listOfEvents = listOfEvents.substr(0, listOfEvents.length - 2);
+            } else {
+                listOfEvents = 'There are no events.';
+            }
+
+            msg.channel.send(listOfEvents);
 
             break;
         case 'help':
