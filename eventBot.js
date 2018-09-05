@@ -55,6 +55,29 @@ client.on('message', msg => {
             msg.channel.send('Successfully updated event name.');
 
             break;
+        case 'changeEventDescription':
+            var args = msg.content.slice(2).split(';');
+            if(args.length != 3) {
+                msg.channel.send('That command does not have the correct number of arguments, use help to view the arguments.');
+                break;
+            }
+
+            var event = lookupEvent(args[1]);
+            if(event === null) {
+                msg.channel.send('There is no event that goes by that name.');
+                break;
+            }
+
+            if(event.createdBy !== msg.member) {
+                msg.channel.send('Only the creator of an event can change its properties.');
+                break;
+            }
+
+            event.eventDescription = args[2];
+            event.updateAttendees();
+            msg.channel.send('Successfully updated event description.');
+
+            break;
         case 'listEvents':
             var args = msg.content.slice(2).split(';');
             if(args.length != 1) {
@@ -62,7 +85,7 @@ client.on('message', msg => {
                 break;
             }
 
-            var listOfEvents = '';
+            var listOfEvents = 'List of event names: ';
             for(let event of events) {
                 listOfEvents += event.eventName + ', ';
             }
