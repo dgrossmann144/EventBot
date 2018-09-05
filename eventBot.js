@@ -7,18 +7,49 @@ var events = [];
 client.login(auth.token);
 
 client.on('message', msg => {
-    if (!msg.content.startsWith(';;')) {
+    if(!msg.content.startsWith(';;')) {
         return;
     }
     var command = msg.content.slice(2).split(';')[0];
-    switch(command) {
+    selectCommand: switch(command) {
         case 'createEvent':
             var args = msg.content.slice(2).split(';');
-            if (args.length != 5) {
-                msg.channel.send('That event does not have the correct number of  arguments, use help to view the arguments');
+            if(args.length != 5) {
+                msg.channel.send('That command does not have the correct number of arguments, use help to view the arguments.');
                 break;
             }
-            var newEvent = new UserEvent(args[1], args[2], args[3], args[4], msg.member, msg.channel);
+            if(lookupEvent(args[1]) === null) {
+                new UserEvent(args[1], args[2], args[3], args[4], msg.member, msg.channel);
+            } else {
+                msg.channel.send('There is already an event with that name.');
+                break;
+            }
+
+            break;
+        case 'changeEventName':
+            var args = msg.content.slice(2).split(';');
+            if(args.length != 3) {
+                msg.channel.send('That command does not have the correct number of arguments, use help to view the arguments.');
+                break;
+            }
+
+            var event = lookupEvent(args[1]);
+            if(event === null) {
+                msg.channel.send('There is no event that goes by that name.');
+                break selectCommand;
+            }
+
+            for(var i = 0; i < events.length; i++) {
+                if(args[2] === events[i].eventName) {
+                    msg.channel.send('There is already an event with that name.');
+                    break selectCommand;
+                }
+            }
+            event.eventName = args[2];
+            event.updateAttendees();
+
+            break;
+        case 'listEvents':
 
             break;
         case 'help':
@@ -82,14 +113,13 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
     this.eventMessage;
     var self = this;
 
-    channel.send(createdBy.user + ' has created an event: ' + eventName +
-                 '\n' + eventDescription +
-                 '\n' + 'It will take place ' + eventDate + ' at ' + eventTime +
+    channel.send(createdBy.user + ' has created an event: ' + this.eventName +
+                 '\n' + this.eventDescription +
+                 '\n' + 'It will take place ' + this.eventDate + ' at ' + this.eventTime +
                  '\n' + 'React with ' + channel.guild.emojis.get('409344837997821952') + ' if you are attending, ❓ if you might be attending, or ' + channel.guild.emojis.get('292824502969303041') + ' if you are not attending.').then(message => {
         self.eventMessage = message
         self.isMessageUpdated = true;
 
-        //id for party_wurmple: 409344837997821952
         self.eventMessage.react(self.eventMessage.guild.emojis.get('409344837997821952')).then(() => {
             self.eventMessage.react('❓').then(() => {
                 self.eventMessage.react(self.eventMessage.guild.emojis.get('292824502969303041'));
@@ -139,9 +169,9 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
 
     UserEvent.prototype.updateAttendees = function() {
         this.isMessageUpdated = false;
-        var updatedText = this.createdBy.user + ' has created an event: ' + eventName +
-                     '\n' + eventDescription +
-                     '\n' + 'It will take place ' + eventDate + ' at ' + eventTime +
+        var updatedText = this.createdBy.user + ' has created an event: ' + this.eventName +
+                     '\n' + this.eventDescription +
+                     '\n' + 'It will take place ' + this.eventDate + ' at ' + this.eventTime +
                      '\n' + 'React with ' + channel.guild.emojis.get('409344837997821952') + ' if you are attending, ❓ if you might be attending, or ' + channel.guild.emojis.get('292824502969303041') + ' if you are not attending.' +
                      '\nAttending (' + this.attendees.size +'): ';
         for(let attendee of this.attendees) {
@@ -172,4 +202,13 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
     UserEvent.prototype.toString = function toString() {
         return this.eventName + ' by ' + this.createdBy.nickname.toString();
     }
+}
+
+function lookupEvent(name) {
+    for(let event of events) {
+        if(event.eventName === name) {
+            return event;
+        }
+    }
+    return null;
 }
