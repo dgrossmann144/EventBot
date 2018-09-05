@@ -36,7 +36,12 @@ client.on('message', msg => {
             var event = lookupEvent(args[1]);
             if(event === null) {
                 msg.channel.send('There is no event that goes by that name.');
-                break selectCommand;
+                break;
+            }
+
+            if(event.createdBy !== msg.member) {
+                msg.channel.send('Only the creator of an event can change its properties.');
+                break;
             }
 
             for(var i = 0; i < events.length; i++) {
@@ -47,6 +52,7 @@ client.on('message', msg => {
             }
             event.eventName = args[2];
             event.updateAttendees();
+            msg.channel.send('Successfully updated event name.');
 
             break;
         case 'listEvents':
