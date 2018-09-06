@@ -135,7 +135,7 @@ client.on('message', msg => {
         case 'listEvents':
             var args = msg.content.slice(2).split(';');
             if(args.length != 1) {
-                msg.channel.send('That command does not have the correct number of arguments, use help to view the arguments');
+                msg.channel.send('That command does not have the correct number of arguments, use help to view the arguments.');
                 break;
             }
 
@@ -150,6 +150,29 @@ client.on('message', msg => {
             }
 
             msg.channel.send(listOfEvents);
+
+            break;
+        case 'delete':
+            var args = msg.content.slice(2).split(';');
+            if(args.length != 2) {
+                msg.channel.send('That command does not have the correct number of arguments, use help to view the arguments.');
+                break;
+            }
+
+            var event = lookupEvent(args[1]);
+            if(event === null) {
+                msg.channel.send('There is no event that goes by that name.');
+                break;
+            }
+
+            if(event.createdBy !== msg.member) {
+                msg.channel.send('Only the creator of an event can delete it.');
+                break;
+            }
+
+            event.eventMessage.unpin();
+            events.splice(events.indexOf(event), 1);
+            msg.channel.send('Event deleted.');
 
             break;
         case 'help':
