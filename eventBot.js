@@ -176,8 +176,12 @@ client.on('message', msg => {
 
             break;
         case 'help':
-            //TODO update help command with list of all commands
-
+            msg.channel.send('createEvent;eventName;eventDescription;eventDate;eventTime\n' +
+                             'changeName;eventName;newName\n' +
+                             'changeDescription;eventName;newDescription\n' +
+                             'changeDate;eventName;newDate\n' +
+                             'changeTime;eventName;newTime\n' +
+                             'delete;eventName');
             break;
         default:
             msg.channel.send('That is not a valid command, use help to list all commands.');
