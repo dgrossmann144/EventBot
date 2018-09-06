@@ -4,6 +4,14 @@ var discord = require("discord.js");
 var client = new discord.Client();
 var events = [];
 
+process.on('SIGINT', () => {
+    for (let event of events) {
+        event.eventMessage.unpin();
+    }
+
+    client.destroy();
+});
+
 client.login(auth.token);
 
 client.on('message', msg => {
@@ -203,18 +211,18 @@ function UserEvent (eventName, eventDescription, eventDate, eventTime, createdBy
     this.potentialAttendees = new Set();
     this.notAttending = new Set();
     this.eventMessage;
-    var self = this;
 
     channel.send(createdBy.user + ' has created an event: ' + this.eventName +
                  '\n' + this.eventDescription +
                  '\n' + 'It will take place ' + this.eventDate + ' at ' + this.eventTime +
                  '\n' + 'React with ' + channel.guild.emojis.get('409344837997821952') + ' if you are attending, ❓ if you might be attending, or ' + channel.guild.emojis.get('292824502969303041') + ' if you are not attending.').then(message => {
-        self.eventMessage = message
-        self.isMessageUpdated = true;
+        this.eventMessage = message
+        this.eventMessage.pin();
+        this.isMessageUpdated = true;
 
-        self.eventMessage.react(self.eventMessage.guild.emojis.get('409344837997821952')).then(() => {
-            self.eventMessage.react('❓').then(() => {
-                self.eventMessage.react(self.eventMessage.guild.emojis.get('292824502969303041'));
+        this.eventMessage.react(this.eventMessage.guild.emojis.get('409344837997821952')).then(() => {
+            this.eventMessage.react('❓').then(() => {
+                this.eventMessage.react(this.eventMessage.guild.emojis.get('292824502969303041'));
             });
         });
 
